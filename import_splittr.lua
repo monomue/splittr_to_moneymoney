@@ -6,6 +6,7 @@ Importer{version          = 0.01,
          fileExtension    = "csv",
          description      = "Import transactions from CSV file exported by Splittr"
         }
+-- NEUER TESTBRANCH
 
 local function strToDate (str)
 -- Helper function for converting localized date strings to timestamps.
