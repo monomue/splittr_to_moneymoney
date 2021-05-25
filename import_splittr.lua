@@ -1,19 +1,23 @@
 -- This script based on the given example on https://moneymoney-app.com/api/import/
 -- It is more or less a working in progress thing
 
---[[Splittr offers the possibility to split the given amount to one, some or all members of a groupe BUT it is not YOUR spendet amount, ist just a part of that.
-    This importscript imports only your part of the complete amount 
+--[[Splittr offers the possibility to split the given amount to one, to some or
+to all members of that group. BUT it is not YOUR amount, ist just a part of that.
+This importscript imports only your part of the complete amount
+
+CAVE:
+         N O T   W O R K I N G   yet
 ]]
 
-Importer{version          = 0.02.01,
+Importer{version          = 0.02,
          format           = "Import from Splittr",
          fileExtension    = "csv",
          description      = "Import transactions from CSV file exported by Splittr"
         }
-        
-        
+
+
 -- configuration:
-local splittr_user_name = ""
+local splittr_user_name = "EARLY LOW_ALPHA VERSION: Tobi"
 local user_number = 0
 
 
@@ -23,16 +27,33 @@ local function strToDate (str)
     return os.time{year=y, month=m, day=d}
 end
 
-local function split_string (str, sep)
--- Helper function to split a string by a given separator
-    local sep = sep or ";"
+function split_string (line, separator)
+    -- Helper function for splitting a string by a separator (default ";" into its components
     local splits = {}
-    for i = 1, #str, 1 do
-        string.gmatch(line, "[^" .. sep .. "]*") 
-        table.insert(splits, split)
+    local position = 1
+    -- parsing the "line" start with position 1
+    separator = separator or ";"
+    while true do
+        local start_position ,end_position = string.find(line, separator, position, true)
+        -- string.find returns the start_position and end_position of a given string/pattern
+        -- if called with one variable x = string.find... just the start
+        -- last argument plain/true: no pattern search
+
+        if start_position then
+            -- number => true
+            -- nil => flase
+            split = string.sub(line, position, start_position - 1)
+            table.insert(splits, split)
+            position = end_position + 1
+        else
+            -- no separator found -> use rest of string and terminate
+            table.insert(splits, string.sub(line, position, -1))
+            break
+        end
     end
     return splits
-
+    -- returns a table of splits
+end
 
 function ReadTransactions (account)
     -- Read transactions from a file exported by Splittr
@@ -40,7 +61,7 @@ function ReadTransactions (account)
     -- Titel;Datum;Kategorie;Notizen;Foto;;Währung;Betrag in Währung;Umrechnungskurs;Betrag (EUR);;USERNAME_01;Guthaben;Schulden;;USERNAME_n;Guthaben;Schulden
     -- os.setlocale("de_DE.UTF-8") does nothing obious in MoneyMoney
     --so do your own localizing: decimal, bringt nichts ....
-    
+
     -- print("Lua-Version: " .. _VERSION)
     local transactions = {}
     local linecount = 0
@@ -48,54 +69,50 @@ function ReadTransactions (account)
     -- popping the first table Element seems to "cost" more
     for line in assert(io.lines()) do
         if linecount == 0 then
-        -- search for splittr_user_name
+            local title = {}
+            local titles = split_string(line, ";")
+
+            -- search for splittr_user_name
+            -- #TODO : nach Name suchen, wenn gefunden import weiter, wenn nicht fehlermeldung
         print("line: >>> " .. line)
         end
         if linecount ~= 0 then
             local values = {}
-            for value in split_string(line, ";") do
-                table.insert(values, value)
+            local values = split_string(line, ";")
+
+            -- finding the values ... why are there some empty cells?
+
+            for i=1, #values, 1  do
+                print("values[" .. i .. "]: " .. values[i])
             end
 
-      -- finding the values ... why are there some empty cells?
-      --[[
-      for i=1, #values, 1  do
-        print("values[" .. i .. "]: " .. values[i])
-      end
-      ]]
-
-            if #values >= 23 and values[1] ~= "Gesamt" then
-                local amount_string = string.gsub(values[12], ",", ".")
+            if #values >= 18 and values[1] ~= "Gesamt" then
+                local amount_string = string.gsub(values[10], ",", ".")
                 local transaction = {
-                -- name = , WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
+                -- name = splittr_user_name,
+                name = splittr_user_name .. "'s Anteil von:      " .. values[1],
+                -- WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
                 purpose = values[1],
-                -- values[2] leer? WARUM ????
-                bookingDate = strToDate(values[3]),
-                -- values[4]
-                category = values[5],
-                -- values[6]
-                comment = values[7],
-                -- values[8]
-                -- values[9] : Foto             NOT USED
-                -- values[10]
-                currency = values[11],
-                -- values[12]
-                -- values[13] : leer             NOT USED
-
+                bookingDate = strToDate(values[2]),
+                category = values[3],
+                comment = values[4],
+                -- values[5] : Foto
+                -- values[6] : double ";"             NOT USED
+                currency = values[7],
+                -- values[8] : Betrag in Währung
+                -- values[9] : Umrechnungskurs
                 amount = tonumber(amount_string), -- tonumber hat Probleme mit dezimaltrenner ","
                 -- oder mit ... str = MM.localizeAmount([format, ]amount[, currency])
                 -- arbeiten V 1.0 ?????
 
-                -- values[] : Umrechnungskurs  NOT USED
-                -- values[] : Betrag (EUR)    NOT USED
-                -- values[] : leer            NOT USED
                 -- the following lines n-times for each user
-                -- values[] : User            NOT USED
+                -- values[] : User betrag     NOT USED     #TODO
                 -- values[] : Guthaben        NOT USED
                 -- values[] : Schulden        NOT USED
                 bookingText = "from Splittr"
                 }
                 table.insert(transactions, transaction)
+            else print("ignore last line")
             end
         end
         linecount = linecount + 1
