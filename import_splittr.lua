@@ -107,6 +107,9 @@ function ReadTransactions (account)
                 local amount_user_part = values[index_user]
                 -- substitute dezimal . with localized dezimal ,
                 local amount_user_part_string = string.gsub(amount_user_part, ",", ".")
+                if amount_user_part_string > 0 then
+                    amount_user_part_string = amount_user_part_string * -1
+                end
 
                 local transaction = {
                     -- name = splittr_user_name,
