@@ -3,13 +3,12 @@
 
 --[[Splittr offers the possibility to split the given amount to one, to some or
 to all members of that group. BUT it is not YOUR amount, ist just a part of that.
-This importscript imports only your part of the complete amount
+This importscript imports only your part of the complete amount as negative numbers.
+For me it works, because every transaction in splittr is a spending.
 
-CAVE:
-         N O T   W O R K I N G   yet
 ]]
 
-Importer{version          = 0.02,
+Importer{version          = 0.03,
          format           = "Import from Splittr",
          fileExtension    = "csv",
          description      = "Import transactions from CSV file exported by Splittr"
@@ -29,6 +28,13 @@ local function get_key_of_user (table, user_name)
     end
 end
 
+local function dezimal_sub (str)
+    -- Helper function to substitute comma(,) with period (.)
+    -- returns a number
+    result = string.gsub(str, ",", ".")
+
+    return tonumber(result)
+end
 
 local function strToDate (str)
 -- Helper function for converting localized date strings to timestamps.
@@ -104,11 +110,10 @@ function ReadTransactions (account)
             if #values >= 18 and values[1] ~= "Gesamt" then
                 -- get the user part of the total-amount
 
-                local amount_user_part = values[index_user]
-                -- substitute dezimal . with localized dezimal ,
-                local amount_user_part_string = string.gsub(amount_user_part, ",", ".")
-                if amount_user_part_string > 0 then
-                    amount_user_part_string = amount_user_part_string * -1
+                amount_user_part = values[index_user]
+                amount_user_part = dezimal_sub(amount_user_part)
+                if amount_user_part > 0 then
+                    amount_user_part = amount_user_part * -1
                 end
 
                 local transaction = {
@@ -124,9 +129,7 @@ function ReadTransactions (account)
                     currency = values[7],
                     -- values[8] : Betrag in Währung
                     -- values[9] : Umrechnungskurs
-                    amount = tonumber(amount_user_part_string), -- tonumber hat Probleme mit dezimaltrenner ","
-                    -- oder mit ... str = MM.localizeAmount([format, ]amount[, currency])
-                    -- arbeiten V 1.0 ?????
+                    amount = amount_user_part,
 
                     -- the following lines n-times for each user
                     -- values[] : User betrag     NOT USED     #TODO
