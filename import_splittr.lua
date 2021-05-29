@@ -118,9 +118,9 @@ function ReadTransactions (account)
 
                 local transaction = {
                     -- name = splittr_user_name,
-                    name = splittr_user_name .. "'s Anteil von:    " .. values[1],
+                    name = values[1],
                     -- WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
-                    purpose = values[1],
+                    purpose = values[1] .. ": Gesamtkosten: " .. values[10] .. " " .. splittr_user_name .. "'s Anteil: " .. amount_user_part .. " " .. values[7],
                     bookingDate = strToDate(values[2]),
                     category = values[3],
                     comment = values[4],
