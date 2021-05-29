@@ -17,8 +17,17 @@ Importer{version          = 0.02,
 
 
 -- configuration:
-local splittr_user_name = "EARLY LOW_ALPHA VERSION: Tobi"
+local splittr_user_name = "Test 01"
 local user_number = 0
+
+local function get_key_of_user (table, user_name)
+    -- Helper function to get the index (number of row) for a given user
+    for index, value in ipairs(table) do
+        if value == user_name then
+            return index
+        end
+    end
+end
 
 
 local function strToDate (str)
@@ -72,6 +81,14 @@ function ReadTransactions (account)
             local title = {}
             local titles = split_string(line, ";")
 
+            index_user = get_key_of_user(titles, splittr_user_name)
+            if index_user == nil then
+                print("User " .. splittr_user_name .. " not found, i returns please check splittr_user_name probably arround line 20 in the code")
+                return nil
+            else
+                print("Using " .. splittr_user_name .. " as User, with cell_ID: " .. index_user)
+            end
+
             -- search for splittr_user_name
             -- #TODO : nach Name suchen, wenn gefunden import weiter, wenn nicht fehlermeldung
         print("line: >>> " .. line)
@@ -80,39 +97,42 @@ function ReadTransactions (account)
             local values = {}
             local values = split_string(line, ";")
 
-            -- finding the values ... why are there some empty cells?
-
             for i=1, #values, 1  do
                 print("values[" .. i .. "]: " .. values[i])
             end
 
             if #values >= 18 and values[1] ~= "Gesamt" then
-                local amount_string = string.gsub(values[10], ",", ".")
-                local transaction = {
-                -- name = splittr_user_name,
-                name = splittr_user_name .. "'s Anteil von:      " .. values[1],
-                -- WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
-                purpose = values[1],
-                bookingDate = strToDate(values[2]),
-                category = values[3],
-                comment = values[4],
-                -- values[5] : Foto
-                -- values[6] : double ";"             NOT USED
-                currency = values[7],
-                -- values[8] : Betrag in Währung
-                -- values[9] : Umrechnungskurs
-                amount = tonumber(amount_string), -- tonumber hat Probleme mit dezimaltrenner ","
-                -- oder mit ... str = MM.localizeAmount([format, ]amount[, currency])
-                -- arbeiten V 1.0 ?????
+                -- get the user part of the total-amount
 
-                -- the following lines n-times for each user
-                -- values[] : User betrag     NOT USED     #TODO
-                -- values[] : Guthaben        NOT USED
-                -- values[] : Schulden        NOT USED
-                bookingText = "from Splittr"
+                local amount_user_part = values[index_user]
+                -- substitute dezimal . with localized dezimal ,
+                local amount_user_part_string = string.gsub(amount_user_part, ",", ".")
+
+                local transaction = {
+                    -- name = splittr_user_name,
+                    name = splittr_user_name .. "'s Anteil von:    " .. values[1],
+                    -- WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
+                    purpose = values[1],
+                    bookingDate = strToDate(values[2]),
+                    category = values[3],
+                    comment = values[4],
+                    -- values[5] : Foto
+                    -- values[6] : double ";"             NOT USED
+                    currency = values[7],
+                    -- values[8] : Betrag in Währung
+                    -- values[9] : Umrechnungskurs
+                    amount = tonumber(amount_user_part_string), -- tonumber hat Probleme mit dezimaltrenner ","
+                    -- oder mit ... str = MM.localizeAmount([format, ]amount[, currency])
+                    -- arbeiten V 1.0 ?????
+
+                    -- the following lines n-times for each user
+                    -- values[] : User betrag     NOT USED     #TODO
+                    -- values[] : Guthaben        NOT USED
+                    -- values[] : Schulden        NOT USED
+                    bookingText = "from Splittr"
                 }
+
                 table.insert(transactions, transaction)
-            else print("ignore last line")
             end
         end
         linecount = linecount + 1
