@@ -16,7 +16,7 @@ Importer{version          = 0.03,
 
 
 -- configuration:
-local splittr_user_name = "Test 01"
+local splittr_user_name = "Tobias Münster"
 local user_number = 0
 
 local function get_key_of_user (table, user_name)
@@ -104,13 +104,13 @@ function ReadTransactions (account)
             local values = split_string(line, ";")
 
             for i=1, #values, 1  do
-                print("values[" .. i .. "]: " .. values[i])
+                print(linecount .. ":  values[" .. i .. "]: " .. values[i])
             end
 
             if #values >= 18 and values[1] ~= "Gesamt" then
                 -- get the user part of the total-amount
 
-                amount_user_part = values[index_user]
+                amount_user_part = values[index_user + 2]
                 amount_user_part = dezimal_sub(amount_user_part)
                 if amount_user_part > 0 then
                     amount_user_part = amount_user_part * -1
@@ -120,7 +120,7 @@ function ReadTransactions (account)
                     -- name = splittr_user_name,
                     name = values[1],
                     -- WENN Name nicht gestzt wird er purpose -> Name ... v1.0?
-                    purpose = values[1] .. ": Gesamtkosten: " .. values[10] .. " " .. splittr_user_name .. "'s Anteil: " .. amount_user_part .. " " .. values[7],
+                    purpose = values[1] .. ":  Gesamtkosten: " .. values[10] .. ";    " .. splittr_user_name .. "'s Anteil: " .. amount_user_part .. " " .. values[7],
                     bookingDate = strToDate(values[2]),
                     category = values[3],
                     comment = values[4],
